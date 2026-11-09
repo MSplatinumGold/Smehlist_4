@@ -4,10 +4,11 @@ import { Clock, Smartphone, ArrowLeft } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
+  onVote?: (battleIndex: number, votedPlayerId: string) => void;
   onBackToLobby?: () => void;
 }
 
-export const HostBattleShowdown: React.FC<Props> = ({ roomState, onBackToLobby }) => {
+export const HostBattleShowdown: React.FC<Props> = ({ roomState, onVote, onBackToLobby }) => {
   const battle = roomState.battles[roomState.currentBattleIndex];
   if (!battle) return null;
 
@@ -104,10 +105,24 @@ export const HostBattleShowdown: React.FC<Props> = ({ roomState, onBackToLobby }
             )}
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-center">
-            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+          <div className="pt-3 border-t border-slate-800 text-center space-y-2">
+            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold block">
               Кнопка [1] на контроллере
             </span>
+            {onVote && (
+              <button
+                onClick={() => onVote(roomState.currentBattleIndex, battle.player1Id)}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  battle.votes[roomState.hostId] === battle.player1Id
+                    ? 'bg-yellow-400 text-slate-950 shadow-md'
+                    : 'bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-200 border border-indigo-400/40 active:scale-95'
+                }`}
+              >
+                {battle.votes[roomState.hostId] === battle.player1Id
+                  ? '✓ Ведущий выбрал этот вариант'
+                  : '👑 Голосовать как ведущий (1)'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -141,17 +156,33 @@ export const HostBattleShowdown: React.FC<Props> = ({ roomState, onBackToLobby }
             )}
           </div>
 
-          <div className="pt-3 border-t border-slate-800 text-center">
-            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+          <div className="pt-3 border-t border-slate-800 text-center space-y-2">
+            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold block">
               Кнопка [2] на контроллере
             </span>
+            {onVote && (
+              <button
+                onClick={() => onVote(roomState.currentBattleIndex, battle.player2Id)}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  battle.votes[roomState.hostId] === battle.player2Id
+                    ? 'bg-yellow-400 text-slate-950 shadow-md'
+                    : 'bg-purple-600/30 hover:bg-purple-600/60 text-purple-200 border border-purple-400/40 active:scale-95'
+                }`}
+              >
+                {battle.votes[roomState.hostId] === battle.player2Id
+                  ? '✓ Ведущий выбрал этот вариант'
+                  : '👑 Голосовать как ведущий (2)'}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Bottom hint banner */}
       <div className="text-center py-3 bg-slate-900/60 rounded-2xl border border-slate-800 text-xs text-slate-400 mt-4">
-        Авторы не видят свои кнопки. Все остальные игроки голосуют за самый смешной вариант!
+        {roomState.players.length <= 2
+          ? 'Тестовый режим (2 игрока): игроки и боты могут голосовать за любой понравившийся ответ!'
+          : 'Жюри голосует на своих смартфонах за самый смешной вариант. Авторы болеют за свой панчлайн!'}
       </div>
     </div>
   );

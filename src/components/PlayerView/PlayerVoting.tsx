@@ -21,11 +21,13 @@ export const PlayerVoting: React.FC<Props> = ({
   const battle = roomState.battles[roomState.currentBattleIndex];
   if (!battle) return null;
 
-  const isMyBattle = battle.player1Id === currentPlayer.id || battle.player2Id === currentPlayer.id;
+  const isDuelist = battle.player1Id === currentPlayer.id || battle.player2Id === currentPlayer.id;
+  // Duelists only blocked if there are other players (3+) to vote
+  const isMyBattleBlocked = isDuelist && roomState.players.length > 2;
   const myVote = battle.votes[currentPlayer.id];
 
   const handleVote = (targetPlayerId: string) => {
-    if (isMyBattle || myVote) return;
+    if (isMyBattleBlocked || myVote) return;
     onSubmitVote(roomState.currentBattleIndex, targetPlayerId);
   };
 
@@ -57,8 +59,8 @@ export const PlayerVoting: React.FC<Props> = ({
 
       {/* Main Choice Arena */}
       <div className="my-auto space-y-4">
-        {isMyBattle ? (
-          /* When current player is one of the authors */
+        {isMyBattleBlocked ? (
+          /* When in 3+ player room and player is one of the authors */
           <div className="bg-[#14172E] border border-yellow-400/30 rounded-3xl p-6 sm:p-8 text-center space-y-3 shadow-2xl">
             <div className="w-14 h-14 rounded-2xl bg-yellow-400/20 text-yellow-300 flex items-center justify-center mx-auto">
               <ShieldAlert className="w-7 h-7" />
@@ -67,7 +69,7 @@ export const PlayerVoting: React.FC<Props> = ({
               Это ваша дуэль! ⚔️
             </h3>
             <p className="text-xs text-slate-300">
-              По правилам вы не можете голосовать в собственном баттле. Смотрите на экран ТВ и болейте за свой ответ!
+              В этом баттле соревнуется ваш ответ! Жюри (остальные игроки) сейчас голосуют за вас. Болейте за свой ответ на ТВ!
             </p>
           </div>
         ) : myVote ? (

@@ -142,6 +142,8 @@ function prepareBattlesForRound(room: ExtendedRoom) {
   const eligible = getEligiblePrompts(room.settings.tags, room.settings.types);
   const shuffled = [...eligible].sort(() => Math.random() - 0.5);
 
+  // Host is spectator/TV and never participates as a respondent
+  room.players = room.players.filter((p) => p.id !== room.hostId && !p.isHost);
   const players = room.players;
   const battles: BattlePair[] = [];
 
@@ -196,6 +198,8 @@ function startAnsweringPhase(room: ExtendedRoom) {
   room.phase = 'PROMPTS';
   room.maxTimer = room.settings.timerSeconds;
   room.timer = room.settings.timerSeconds;
+  // Double-check host is not in players
+  room.players = room.players.filter((p) => p.id !== room.hostId && !p.isHost);
   prepareBattlesForRound(room);
 
   broadcastSound(room, 'start');
@@ -304,8 +308,32 @@ function simulateBotAnswers(room: ExtendedRoom) {
   }, 2500);
 }
 
+// Helper: Check if all eligible voters have cast their votes
+function checkVotingComplete(room: ExtendedRoom) {
+  if (room.phase !== 'VOTING') return;
+  const currentBattle = room.battles[room.currentBattleIndex];
+  if (!currentBattle) return;
+
+  const activePlayers = room.players.filter((p) => p.connected || p.isBot);
+  // Eligible voters: in 3+ player games, duelists do not vote in their own showdown.
+  // In 2-player games, both players are eligible to vote.
+  const eligibleVoters = activePlayers.length > 2
+    ? activePlayers.filter((p) => p.id !== currentBattle.player1Id && p.id !== currentBattle.player2Id)
+    : activePlayers;
+
+  const allVoted = eligibleVoters.length > 0
+    ? eligibleVoters.every((p) => currentBattle.votes[p.id])
+    : Object.keys(currentBattle.votes).length >= 1;
+
+  if (allVoted) {
+    if (room.timerInterval) clearInterval(room.timerInterval);
+    revealBattleResults(room);
+  }
+}
+
 // Start Voting Phase for Current Battle
 function startVotingPhase(room: ExtendedRoom) {
+  if (room.timerInterval) clearInterval(room.timerInterval);
   room.phase = 'VOTING';
   room.maxTimer = 25;
   room.timer = 25;
@@ -313,58 +341,73 @@ function startVotingPhase(room: ExtendedRoom) {
   broadcastSound(room, 'whoosh');
   broadcastRoom(room);
 
-  // Simulate bot votes after 2-4 seconds
+  // Trigger bot votes
   simulateBotVotes(room);
 
-  if (room.timerInterval) clearInterval(room.timerInterval);
   room.timerInterval = setInterval(() => {
     room.timer -= 1;
 
     const currentBattle = room.battles[room.currentBattleIndex];
     if (!currentBattle) {
+      if (room.timerInterval) clearInterval(room.timerInterval);
       finishRound(room);
       return;
     }
 
-    // Check if all non-competing players voted
-    const eligibleVoters = room.players.filter(
-      (p) => p.id !== currentBattle.player1Id && p.id !== currentBattle.player2Id
-    );
-    // If only 2 players exist, competing players can also vote or auto-resolve
-    const allVoted = eligibleVoters.length > 0
-      ? eligibleVoters.every((p) => currentBattle.votes[p.id])
-      : Object.keys(currentBattle.votes).length >= 1;
-
-    if (room.timer <= 0 || allVoted) {
-      clearInterval(room.timerInterval!);
+    if (room.timer <= 0) {
+      if (room.timerInterval) clearInterval(room.timerInterval);
       revealBattleResults(room);
     } else {
       if (room.timer <= 5) broadcastSound(room, 'tick');
       broadcastRoom(room);
+      checkVotingComplete(room);
     }
   }, 1000);
 }
 
-// Bot voting simulation
+// Bot voting simulation with support for 2-player testing
 function simulateBotVotes(room: ExtendedRoom) {
   const currentBattle = room.battles[room.currentBattleIndex];
   if (!currentBattle) return;
 
   const bots = room.players.filter((p) => p.isBot);
+  if (bots.length === 0) return;
+
+  // Natural delay for bots
   setTimeout(() => {
+    // Only vote if we are still in VOTING phase for this exact battle
+    if (room.phase !== 'VOTING' || room.battles[room.currentBattleIndex] !== currentBattle) return;
+
     bots.forEach((bot) => {
-      // Bot doesn't vote for itself
-      if (bot.id === currentBattle.player1Id || bot.id === currentBattle.player2Id) return;
-      const target = Math.random() > 0.5 ? currentBattle.player1Id : currentBattle.player2Id;
+      // In 3+ player games, duelists cannot vote for themselves
+      if (room.players.length > 2 && (bot.id === currentBattle.player1Id || bot.id === currentBattle.player2Id)) {
+        return;
+      }
+
+      let target: string;
+      if (room.players.length <= 2) {
+        // In 2-player game, bot votes for opponent (or 50/50)
+        target = bot.id === currentBattle.player1Id ? currentBattle.player2Id : currentBattle.player1Id;
+      } else {
+        target = Math.random() > 0.45 ? currentBattle.player1Id : currentBattle.player2Id;
+      }
+
       currentBattle.votes[bot.id] = target;
     });
+
+    broadcastSound(room, 'vote');
     broadcastRoom(room);
-  }, 2500);
+    checkVotingComplete(room);
+  }, 1800);
 }
 
-// Reveal current battle winner and award points
+// Reveal current battle winner and award points, then auto-advance
 function revealBattleResults(room: ExtendedRoom) {
+  if (room.timerInterval) clearInterval(room.timerInterval);
   room.phase = 'REVEAL';
+  room.maxTimer = 8;
+  room.timer = 8;
+
   const battle = room.battles[room.currentBattleIndex];
 
   if (battle) {
@@ -404,10 +447,22 @@ function revealBattleResults(room: ExtendedRoom) {
 
   broadcastSound(room, 'reveal');
   broadcastRoom(room);
+
+  // Auto-advance countdown so the game never stalls waiting on a button press
+  room.timerInterval = setInterval(() => {
+    room.timer -= 1;
+    if (room.timer <= 0) {
+      if (room.timerInterval) clearInterval(room.timerInterval);
+      advanceToNextBattle(room);
+    } else {
+      broadcastRoom(room);
+    }
+  }, 1000);
 }
 
 // Transition to next battle or finish round
 function advanceToNextBattle(room: ExtendedRoom) {
+  if (room.timerInterval) clearInterval(room.timerInterval);
   if (room.currentBattleIndex + 1 < room.battles.length) {
     room.currentBattleIndex += 1;
     startVotingPhase(room);
@@ -490,9 +545,26 @@ wss.on('connection', (ws: WebSocket) => {
             return;
           }
 
-          // Check if reconnecting existing player
+          // 1. Check if the HOST is reconnecting
+          const isHostReconnect =
+            Boolean(msg.payload.playerId && msg.payload.playerId === room.hostId) ||
+            Boolean(msg.payload.isHost);
+
+          if (isHostReconnect) {
+            room.clients.set(room.hostId, ws);
+            boundPlayerId = room.hostId;
+            boundRoomCode = code;
+            sendToSocket(ws, {
+              type: 'JOINED_SUCCESS',
+              payload: { playerId: room.hostId, roomCode: code, isHost: true },
+            });
+            broadcastRoom(room);
+            break;
+          }
+
+          // 2. Regular player reconnect or new player join
           let player: Player | undefined;
-          if (msg.payload.playerId) {
+          if (msg.payload.playerId && msg.payload.playerId !== room.hostId) {
             player = room.players.find((p) => p.id === msg.payload.playerId);
           }
 
@@ -518,7 +590,7 @@ wss.on('connection', (ws: WebSocket) => {
 
           sendToSocket(ws, {
             type: 'JOINED_SUCCESS',
-            payload: { playerId: player.id, roomCode: code, isHost: player.isHost },
+            payload: { playerId: player.id, roomCode: code, isHost: false },
           });
           broadcastRoom(room);
           break;
@@ -633,15 +705,16 @@ wss.on('connection', (ws: WebSocket) => {
 
           const battle = room.battles[msg.payload.battleIndex];
           if (battle) {
-            // Cannot vote for yourself
-            if (boundPlayerId === battle.player1Id || boundPlayerId === battle.player2Id) {
-              sendToSocket(ws, { type: 'ERROR', payload: { message: 'Нельзя голосовать за свой ответ!' } });
+            // In 3+ player games, duelists cannot vote for themselves
+            if (room.players.length > 2 && (boundPlayerId === battle.player1Id || boundPlayerId === battle.player2Id)) {
+              sendToSocket(ws, { type: 'ERROR', payload: { message: 'Нельзя голосовать в своей дуэли при игре втроём и больше!' } });
               return;
             }
 
             battle.votes[boundPlayerId] = msg.payload.votedPlayerId;
             broadcastSound(room, 'vote');
             broadcastRoom(room);
+            checkVotingComplete(room);
           }
           break;
         }
@@ -650,6 +723,7 @@ wss.on('connection', (ws: WebSocket) => {
           if (!boundRoomCode) return;
           const room = rooms.get(boundRoomCode);
           if (!room || room.phase !== 'REVEAL') return;
+          if (room.timerInterval) clearInterval(room.timerInterval);
           advanceToNextBattle(room);
           break;
         }

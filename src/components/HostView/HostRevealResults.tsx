@@ -216,14 +216,23 @@ export const HostRevealResults: React.FC<Props> = ({ roomState, onNextBattle, on
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex items-center justify-between pt-6 border-t border-indigo-500/20">
-        <span className="text-xs text-slate-400">
-          Голоса подсчитаны. Нажмите кнопку ведущего для продолжения.
-        </span>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-indigo-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-400 text-yellow-400 font-mono font-bold flex items-center justify-center text-sm animate-pulse">
+            {roomState.timer}
+          </div>
+          <span className="text-xs text-slate-300">
+            {roomState.timer > 0 ? (
+              <>Автопереход через <span className="font-bold text-yellow-400 font-mono">{roomState.timer}с</span> или нажмите кнопку прямо сейчас:</>
+            ) : (
+              'Переход к следующему баттлу...'
+            )}
+          </span>
+        </div>
 
         <button
           onClick={onNextBattle}
-          className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-slate-950 font-black text-sm tracking-wide uppercase transition-all shadow-lg hover:shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center gap-2"
+          className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-slate-950 font-black text-sm tracking-wide uppercase transition-all shadow-lg hover:shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-95"
         >
           <span>{isLastBattle ? 'Перейти к итогам раунда' : 'Следующий баттл'}</span>
           <ArrowRight className="w-4 h-4" />

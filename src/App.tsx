@@ -186,6 +186,9 @@ export default function App() {
           {roomState.phase === 'VOTING' && (
             <HostBattleShowdown
               roomState={roomState}
+              onVote={(battleIndex, votedPlayerId) =>
+                sendMessage({ type: 'SUBMIT_VOTE', payload: { battleIndex, votedPlayerId } })
+              }
               onBackToLobby={handleBackToLobby}
             />
           )}

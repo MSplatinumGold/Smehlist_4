@@ -84,7 +84,7 @@ export interface GameRoomState {
 // Client <-> Server WebSocket Messages
 export type WsClientMessage =
   | { type: 'CREATE_ROOM'; payload: { hostName: string; avatar: string } }
-  | { type: 'JOIN_ROOM'; payload: { roomCode: string; playerName: string; avatar: string; playerId?: string } }
+  | { type: 'JOIN_ROOM'; payload: { roomCode: string; playerName: string; avatar: string; playerId?: string; isHost?: boolean } }
   | { type: 'UPDATE_SETTINGS'; payload: { settings: Partial<GameSettings> } }
   | { type: 'TOGGLE_READY'; payload: { isReady?: boolean } }
   | { type: 'ADD_BOT'; payload?: { count?: number } }

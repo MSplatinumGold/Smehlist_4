@@ -39,16 +39,18 @@ export function useGameSocket() {
       const storedId = sessionStorage.getItem('meh_player_id');
       const storedName = sessionStorage.getItem('meh_player_name');
       const storedAvatar = sessionStorage.getItem('meh_player_avatar');
+      const storedIsHost = sessionStorage.getItem('meh_is_host') === 'true';
 
-      if (storedCode && storedId && storedName) {
+      if (storedCode && storedId) {
         ws.send(
           JSON.stringify({
             type: 'JOIN_ROOM',
             payload: {
               roomCode: storedCode,
-              playerName: storedName,
-              avatar: storedAvatar || '😎',
+              playerName: storedName || (storedIsHost ? 'Ведущий' : 'Игрок'),
+              avatar: storedAvatar || (storedIsHost ? '👑' : '😎'),
               playerId: storedId,
+              isHost: storedIsHost,
             },
           })
         );

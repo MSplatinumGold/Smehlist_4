@@ -58,12 +58,18 @@ export const PlayerWaiting: React.FC<Props> = ({
 
         <div className="space-y-1.5">
           <h2 className="text-xl font-black text-white">
-            {isFinal ? 'Игра завершена! 🏆' : 'Смотрите на экран ТВ! 📺'}
+            {isFinal
+              ? 'Игра завершена! 🏆'
+              : roomState.phase === 'REVEAL'
+              ? 'Итоги дуэли на ТВ! ⚔️'
+              : 'Смотрите на экран ТВ! 📺'}
           </h2>
           <p className="text-xs text-slate-300">
             {isFinal
               ? 'На главном экране проходит церемония награждения'
-              : 'Сейчас подводятся результаты голосования'}
+              : roomState.phase === 'REVEAL'
+              ? `Смотрите победителя! Следующий баттл через ${roomState.timer}с`
+              : 'Сейчас подводятся результаты раунда на главном экране'}
           </p>
         </div>
 
