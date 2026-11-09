@@ -753,11 +753,16 @@ app.post('/api/prompts/generate', async (req: Request, res: Response) => {
 // Vite Integration (Dev vs Prod)
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'dist')));
+    // __dirname в production уже указывает на папку dist
+    const clientDistPath = fs.existsSync(path.join(__dirname, 'index.html'))
+      ? __dirname
+      : path.join(__dirname, 'dist');
+
+    app.use(express.static(clientDistPath));
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.join(clientDistPath, 'index.html'));
     });
-  } else {
+  } else { else {
     // In dev, use Vite's connect instance
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
