@@ -1,0 +1,6 @@
+{
+  "name": "MEHLIST: Вечеринка с вопросами",
+  "description": "Интерактивная party-игра для компании по коду комнаты с ТВ-экраном и контроллерами на смартфонах.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
