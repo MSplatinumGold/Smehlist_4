@@ -1,13 +1,14 @@
 import React from 'react';
 import { GameRoomState, Player } from '../../types/game.ts';
 import { ReactionPad } from './ReactionPad.tsx';
-import { Loader2, Users, CheckCircle2 } from 'lucide-react';
+import { Loader2, Users, CheckCircle2, Bot } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
   currentPlayer: Player;
   onSendReaction: (emoji: string) => void;
   onLeaveRoom: () => void;
+  onAddBot?: (count?: number) => void;
 }
 
 export const PlayerLobby: React.FC<Props> = ({
@@ -15,6 +16,7 @@ export const PlayerLobby: React.FC<Props> = ({
   currentPlayer,
   onSendReaction,
   onLeaveRoom,
+  onAddBot,
 }) => {
   return (
     <div className="max-w-md mx-auto px-4 py-6 flex flex-col min-h-[90vh] justify-between text-slate-100">
@@ -87,6 +89,16 @@ export const PlayerLobby: React.FC<Props> = ({
               </span>
             ))}
           </div>
+
+          {roomState.players.length < 2 && onAddBot && (
+            <button
+              onClick={() => onAddBot(1)}
+              className="mt-3 w-full py-2.5 px-3 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-indigo-300 text-xs font-bold hover:bg-indigo-900/80 flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <Bot className="w-4 h-4" />
+              <span>Добавить бота для теста (+1)</span>
+            </button>
+          )}
         </div>
       </div>
 

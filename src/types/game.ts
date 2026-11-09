@@ -88,6 +88,7 @@ export type WsClientMessage =
   | { type: 'UPDATE_SETTINGS'; payload: { settings: Partial<GameSettings> } }
   | { type: 'TOGGLE_READY'; payload: { isReady?: boolean } }
   | { type: 'ADD_BOT'; payload?: { count?: number } }
+  | { type: 'CLEAR_BOTS' }
   | { type: 'REMOVE_PLAYER'; payload: { playerId: string } }
   | { type: 'START_GAME' }
   | { type: 'SUBMIT_ANSWER'; payload: { promptId: string; text: string; thripItems?: [string, string, string] } }

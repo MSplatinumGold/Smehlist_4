@@ -258,30 +258,50 @@ function simulateBotAnswers(room: ExtendedRoom) {
   const bots = room.players.filter((p) => p.isBot);
   if (bots.length === 0) return;
 
+  // Bot answers submit with a natural delay of 2.5-3.5 seconds
   setTimeout(() => {
     room.battles.forEach((b) => {
       const isThrip = b.prompt.type === 'THRIP';
       if (bots.some((bot) => bot.id === b.player1Id) && !b.answer1) {
-        const sample = BOT_ANSWERS_SAMPLE.default[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.default.length)];
-        b.answer1 = {
-          playerId: b.player1Id,
-          promptId: b.promptId,
-          text: isThrip ? BOT_ANSWERS_SAMPLE.thrip.join(', ') : sample,
-          thripItems: isThrip ? ['Чай с мятой', 'Веник из кактуса', 'Караоке Король и Шут'] : undefined,
-        };
+        if (isThrip) {
+          const triple = BOT_ANSWERS_SAMPLE.thrip[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.thrip.length)];
+          b.answer1 = {
+            playerId: b.player1Id,
+            promptId: b.promptId,
+            text: triple.map((item, i) => `${i + 1}. ${item}`).join('  '),
+            thripItems: triple as [string, string, string],
+          };
+        } else {
+          const sample = BOT_ANSWERS_SAMPLE.default[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.default.length)];
+          b.answer1 = {
+            playerId: b.player1Id,
+            promptId: b.promptId,
+            text: sample,
+          };
+        }
       }
+
       if (bots.some((bot) => bot.id === b.player2Id) && !b.answer2) {
-        const sample = BOT_ANSWERS_SAMPLE.default[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.default.length)];
-        b.answer2 = {
-          playerId: b.player2Id,
-          promptId: b.promptId,
-          text: isThrip ? '1. Паспорт 2. Ключи 3. Тапки' : sample,
-          thripItems: isThrip ? ['Паспорт', 'Ключи', 'Тапки'] : undefined,
-        };
+        if (isThrip) {
+          const triple = BOT_ANSWERS_SAMPLE.thrip[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.thrip.length)];
+          b.answer2 = {
+            playerId: b.player2Id,
+            promptId: b.promptId,
+            text: triple.map((item, i) => `${i + 1}. ${item}`).join('  '),
+            thripItems: triple as [string, string, string],
+          };
+        } else {
+          const sample = BOT_ANSWERS_SAMPLE.default[Math.floor(Math.random() * BOT_ANSWERS_SAMPLE.default.length)];
+          b.answer2 = {
+            playerId: b.player2Id,
+            promptId: b.promptId,
+            text: sample,
+          };
+        }
       }
     });
     broadcastRoom(room);
-  }, 3500);
+  }, 2500);
 }
 
 // Start Voting Phase for Current Battle
@@ -425,19 +445,11 @@ wss.on('connection', (ws: WebSocket) => {
       switch (msg.type) {
         case 'CREATE_ROOM': {
           const code = generateRoomCode();
-          const hostPlayer: Player = {
-            id: `p-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            name: msg.payload.hostName.trim() || 'Ведущий',
-            avatar: msg.payload.avatar || '👑',
-            score: 0,
-            isHost: true,
-            isReady: true,
-            connected: true,
-          };
+          const hostId = `host-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
 
           const newRoom: ExtendedRoom = {
             code,
-            hostId: hostPlayer.id,
+            hostId,
             phase: 'LOBBY',
             settings: {
               tags: ['STANDARD', '18+', 'FAMILY'],
@@ -447,23 +459,23 @@ wss.on('connection', (ws: WebSocket) => {
             },
             currentRound: 1,
             totalRounds: 3,
-            players: [hostPlayer],
+            players: [], // HOST is a TV/spectator screen, NOT an answering player!
             timer: 60,
             maxTimer: 60,
             battles: [],
             currentBattleIndex: 0,
             reactions: [],
-            clients: new Map([[hostPlayer.id, ws]]),
+            clients: new Map([[hostId, ws]]),
             lastActive: Date.now(),
           };
 
           rooms.set(code, newRoom);
-          boundPlayerId = hostPlayer.id;
+          boundPlayerId = hostId;
           boundRoomCode = code;
 
           sendToSocket(ws, {
             type: 'JOINED_SUCCESS',
-            payload: { playerId: hostPlayer.id, roomCode: code, isHost: true },
+            payload: { playerId: hostId, roomCode: code, isHost: true },
           });
           broadcastRoom(newRoom);
           break;
@@ -544,6 +556,15 @@ wss.on('connection', (ws: WebSocket) => {
               connected: true,
             });
           }
+          broadcastRoom(room);
+          break;
+        }
+
+        case 'CLEAR_BOTS': {
+          if (!boundRoomCode) return;
+          const room = rooms.get(boundRoomCode);
+          if (!room || room.phase !== 'LOBBY') return;
+          room.players = room.players.filter((p) => !p.isBot);
           broadcastRoom(room);
           break;
         }

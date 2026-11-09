@@ -20,6 +20,7 @@ interface Props {
   roomState: GameRoomState;
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onAddBot: (count?: number) => void;
+  onClearBots?: () => void;
   onRemovePlayer: (playerId: string) => void;
   onStartGame: () => void;
   onOpenPromptsModal: () => void;
@@ -30,6 +31,7 @@ export const HostLobby: React.FC<Props> = ({
   roomState,
   onUpdateSettings,
   onAddBot,
+  onClearBots,
   onRemovePlayer,
   onStartGame,
   onOpenPromptsModal,
@@ -300,45 +302,97 @@ export const HostLobby: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {/* Add bot button */}
-                <div className="flex items-center gap-2">
+                {/* Add bot buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     onClick={() => onAddBot(1)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold border border-indigo-500/30 transition-colors"
+                    title="Добавить 1 бота"
                   >
                     <Bot className="w-3.5 h-3.5" />
-                    <span>+ Бот</span>
+                    <span>+1</span>
+                  </button>
+                  <button
+                    onClick={() => onAddBot(2)}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold border border-indigo-500/30 transition-colors"
+                    title="Добавить 2 ботов"
+                  >
+                    +2
                   </button>
                   <button
                     onClick={() => onAddBot(3)}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition-colors"
-                    title="Добавить 3 ботов для быстрой игры"
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold border border-indigo-500/30 transition-colors"
+                    title="Добавить 3 ботов"
                   >
                     +3
                   </button>
+                  {roomState.players.some((p) => p.isBot) && onClearBots && (
+                    <button
+                      onClick={onClearBots}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors"
+                      title="Удалить всех ботов"
+                    >
+                      Очистить
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Grid of players */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-5 max-h-64 overflow-y-auto pr-1">
-                {roomState.players.map((player) => (
-                  <div
-                    key={player.id}
-                    className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between group hover:border-indigo-500/40 transition-all"
-                  >
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      <span className="text-2xl filter drop-shadow">{player.avatar}</span>
-                      <div className="truncate">
-                        <span className="text-xs font-bold text-white block truncate">
-                          {player.name}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block">
-                          {player.isHost ? '👑 Ведущий' : player.isBot ? '🤖 Бот' : '📱 Игрок'}
-                        </span>
-                      </div>
-                    </div>
+              {/* Grid of players or empty state */}
+              {roomState.players.length === 0 ? (
+                <div className="my-6 py-8 px-4 rounded-2xl bg-slate-900/50 border border-dashed border-slate-800 text-center space-y-4">
+                  <div className="space-y-1">
+                    <span className="text-3xl block">📱</span>
+                    <span className="text-sm font-bold text-slate-200 block">
+                      Ожидаем подключения игроков со смартфонов
+                    </span>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Сканируйте QR-код камерой телефона или введите код <span className="font-mono text-yellow-400 font-bold">{roomState.code}</span> на сайте.
+                    </p>
+                  </div>
 
-                    {!player.isHost && (
+                  {/* Prominent 1-click test button for instant play */}
+                  <div className="pt-2 border-t border-slate-800/80 max-w-md mx-auto space-y-2">
+                    <span className="text-[11px] uppercase font-bold text-yellow-400 tracking-wider block">
+                      Хотите быстро протестировать игру прямо сейчас?
+                    </span>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                      <button
+                        onClick={() => onAddBot(2)}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5"
+                      >
+                        <Bot className="w-4 h-4 fill-current" />
+                        <span>Добавить 2 ботов для теста</span>
+                      </button>
+                      <button
+                        onClick={() => onAddBot(3)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Bot className="w-4 h-4" />
+                        <span>+3 бота</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-5 max-h-64 overflow-y-auto pr-1">
+                  {roomState.players.map((player) => (
+                    <div
+                      key={player.id}
+                      className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between group hover:border-indigo-500/40 transition-all"
+                    >
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <span className="text-2xl filter drop-shadow">{player.avatar}</span>
+                        <div className="truncate">
+                          <span className="text-xs font-bold text-white block truncate">
+                            {player.name}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block">
+                            {player.isBot ? '🤖 Бот' : '📱 Игрок'}
+                          </span>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() => onRemovePlayer(player.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-opacity"
@@ -346,10 +400,10 @@ export const HostLobby: React.FC<Props> = ({
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Start Button Zone */}

@@ -167,6 +167,7 @@ export default function App() {
               roomState={roomState}
               onUpdateSettings={(settings) => sendMessage({ type: 'UPDATE_SETTINGS', payload: { settings } })}
               onAddBot={(count) => sendMessage({ type: 'ADD_BOT', payload: { count } })}
+              onClearBots={() => sendMessage({ type: 'CLEAR_BOTS' })}
               onRemovePlayer={(playerId) => sendMessage({ type: 'REMOVE_PLAYER', payload: { playerId } })}
               onStartGame={() => sendMessage({ type: 'START_GAME' })}
               onOpenPromptsModal={() => setIsPromptsModalOpen(true)}
@@ -234,6 +235,7 @@ export default function App() {
                   currentPlayer={currentPlayer}
                   onSendReaction={(emoji) => sendMessage({ type: 'SEND_REACTION', payload: { emoji } })}
                   onLeaveRoom={handleBackToMenu}
+                  onAddBot={(count) => sendMessage({ type: 'ADD_BOT', payload: { count } })}
                 />
               )}
 
