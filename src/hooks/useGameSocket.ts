@@ -18,6 +18,7 @@ export function useGameSocket() {
 
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messageQueueRef = useRef<WsClientMessage[]>([]);
 
   // Initialize and connect WebSocket
   const connect = useCallback(() => {
@@ -34,7 +35,18 @@ export function useGameSocket() {
       setIsConnected(true);
       setErrorMsg(null);
 
-      // Re-join if we have stored session
+      // 1. Flush any queued messages that were triggered before socket connected
+      if (messageQueueRef.current.length > 0) {
+        while (messageQueueRef.current.length > 0) {
+          const queued = messageQueueRef.current.shift();
+          if (queued) {
+            ws.send(JSON.stringify(queued));
+          }
+        }
+        return;
+      }
+
+      // 2. Otherwise re-join if we have stored session
       const storedCode = sessionStorage.getItem('meh_room_code');
       const storedId = sessionStorage.getItem('meh_player_id');
       const storedName = sessionStorage.getItem('meh_player_name');
@@ -146,13 +158,33 @@ export function useGameSocket() {
   const sendMessage = useCallback((msg: WsClientMessage) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(msg));
+    } else {
+      // Queue message so it will send immediately upon connection
+      messageQueueRef.current.push(msg);
+      if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
+        connect();
+      }
     }
-  }, []);
+  }, [connect]);
 
   const createRoom = useCallback(
     (hostName: string, avatar: string) => {
+      // Clear any previous player or room session
+      sessionStorage.removeItem('meh_room_code');
+      sessionStorage.removeItem('meh_player_id');
       sessionStorage.setItem('meh_player_name', hostName);
       sessionStorage.setItem('meh_player_avatar', avatar);
+      sessionStorage.setItem('meh_is_host', 'true');
+      setIsHost(true);
+      setRoomCode('');
+      setPlayerId('');
+      setRoomState(null);
+
+      // Clean query params from URL so controller mode isn't triggered
+      if (typeof window !== 'undefined' && window.location.search) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
       sendMessage({
         type: 'CREATE_ROOM',
         payload: { hostName, avatar },

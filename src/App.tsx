@@ -62,6 +62,9 @@ export default function App() {
   const handleBackToMenu = () => {
     leaveRoom();
     setAppMode('SELECT');
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   };
 
   const handleBackToLobby = () => {
@@ -159,9 +162,31 @@ export default function App() {
             </button>
           </div>
         </div>
-      ) : appMode === 'HOST' && roomState ? (
-        /* Host Views */
-        <div className="flex-1 flex flex-col">
+      ) : appMode === 'HOST' ? (
+        /* Host Mode */
+        !roomState ? (
+          /* Host Loading / Creating Screen */
+          <div className="max-w-md mx-auto px-4 py-20 my-auto text-center space-y-5">
+            <div className="w-16 h-16 rounded-3xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center mx-auto border border-yellow-400/30 animate-pulse">
+              <Tv className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-white">Создаем комнату для ТВ...</h2>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                Генерация 4-значного кода и настройка экрана вечеринки
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={handleBackToMenu}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition-colors"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col">
           {roomState.phase === 'LOBBY' && (
             <HostLobby
               roomState={roomState}
@@ -217,6 +242,7 @@ export default function App() {
             />
           )}
         </div>
+        )
       ) : (
         /* Controller / Player Views */
         <div className="flex-1 flex flex-col">

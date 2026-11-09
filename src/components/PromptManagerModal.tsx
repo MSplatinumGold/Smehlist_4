@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PromptItem, PromptTag, PromptType } from '../types/game.ts';
-import { X, Plus, Sparkles, Filter, CheckCircle2 } from 'lucide-react';
+import { X, Plus, Sparkles, Filter, CheckCircle2, Search } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -12,6 +12,7 @@ export const PromptManagerModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [filterTag, setFilterTag] = useState<string>('ALL');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // New prompt form state
   const [newText, setNewText] = useState('');
@@ -92,9 +93,14 @@ export const PromptManagerModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const count18 = prompts.filter((p) => p.tag === '18+').length;
+  const countStandard = prompts.filter((p) => p.tag === 'STANDARD').length;
+  const countFamily = prompts.filter((p) => p.tag === 'FAMILY').length;
+
   const filtered = prompts.filter((p) => {
     if (filterTag !== 'ALL' && p.tag !== filterTag) return false;
     if (filterType !== 'ALL' && p.type !== filterType) return false;
+    if (searchQuery.trim() && !p.text.toLowerCase().includes(searchQuery.toLowerCase().trim())) return false;
     return true;
   });
 
@@ -104,14 +110,17 @@ export const PromptManagerModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-indigo-500/20">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              База вопросов и заданий MEHLIST
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono">
+            <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2 flex-wrap">
+              <span>База вопросов MEHLIST</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold">
                 {prompts.length} карточек
+              </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono font-bold border border-rose-500/30">
+                🔞 18+: {count18}
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Включает прикреплённый список вопросов, расширенный банк и генерацию новых
+              Более 300 готовых тем для вечеринки с фильтрацией по категориям и поиском
             </p>
           </div>
           <button
@@ -205,41 +214,80 @@ export const PromptManagerModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          {/* Filter Bar with Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
               <Filter className="w-3.5 h-3.5" />
               <span>Тег:</span>
-              {(['ALL', 'STANDARD', '18+', 'FAMILY'] as const).map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setFilterTag(tag)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-                    filterTag === tag
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
+              <button
+                onClick={() => setFilterTag('ALL')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  filterTag === 'ALL'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                Все ({prompts.length})
+              </button>
+              <button
+                onClick={() => setFilterTag('STANDARD')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  filterTag === 'STANDARD'
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                STANDARD ({countStandard})
+              </button>
+              <button
+                onClick={() => setFilterTag('18+')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  filterTag === '18+'
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                🔞 18+ ({count18})
+              </button>
+              <button
+                onClick={() => setFilterTag('FAMILY')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  filterTag === 'FAMILY'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                🌱 Семейные ({countFamily})
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <span>Тип:</span>
-              {(['ALL', 'STANDARD', 'THRIP'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setFilterType(t)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-                    filterType === t
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:w-56">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Быстрый поиск темы..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 text-xs text-slate-400">
+                {(['ALL', 'STANDARD', 'THRIP'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setFilterType(t)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                      filterType === t
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {t === 'ALL' ? 'Любой тип' : t === 'THRIP' ? '«3 вещи»' : 'Стандарт'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
