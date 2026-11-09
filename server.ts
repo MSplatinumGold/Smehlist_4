@@ -762,7 +762,7 @@ async function startServer() {
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(clientDistPath, 'index.html'));
     });
-  } else { else {
+  } else {
     // In dev, use Vite's connect instance
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
