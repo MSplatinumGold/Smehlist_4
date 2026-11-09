@@ -7,12 +7,14 @@ interface Props {
   roomState: GameRoomState;
   currentPlayer: Player;
   onSendReaction: (emoji: string) => void;
+  onLeaveRoom?: () => void;
 }
 
 export const PlayerWaiting: React.FC<Props> = ({
   roomState,
   currentPlayer,
   onSendReaction,
+  onLeaveRoom,
 }) => {
   // Sort players to find player's current rank
   const sorted = [...roomState.players].sort((a, b) => b.score - a.score);
@@ -25,6 +27,18 @@ export const PlayerWaiting: React.FC<Props> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20">
         <div className="flex items-center gap-2">
+          {onLeaveRoom && (
+            <button
+              onClick={() => {
+                if (window.confirm('Выйти из игры в главное меню?')) {
+                  onLeaveRoom();
+                }
+              }}
+              className="text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-slate-800 text-xs font-semibold mr-1"
+            >
+              ← Выйти
+            </button>
+          )}
           <span className="text-xl">{currentPlayer.avatar}</span>
           <span className="text-xs font-bold text-white">{currentPlayer.name}</span>
         </div>

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { LogIn, Tv } from 'lucide-react';
+import { LogIn, Tv, ArrowLeft } from 'lucide-react';
 
 interface Props {
   initialCode?: string;
   onJoin: (code: string, name: string, avatar: string) => void;
   onSwitchToHost: () => void;
+  onBackToMenu?: () => void;
 }
 
 const AVATARS = ['😎', '🦄', '🐱', '🦊', '🦁', '🐼', '🤖', '👾', '🚀', '🥑', '🍕', '🔥'];
 
-export const PlayerJoin: React.FC<Props> = ({ initialCode = '', onJoin, onSwitchToHost }) => {
+export const PlayerJoin: React.FC<Props> = ({ initialCode = '', onJoin, onSwitchToHost, onBackToMenu }) => {
   const [code, setCode] = useState(initialCode);
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('😎');
@@ -28,8 +29,28 @@ export const PlayerJoin: React.FC<Props> = ({ initialCode = '', onJoin, onSwitch
 
   return (
     <div className="max-w-md mx-auto px-4 py-8 flex flex-col min-h-[90vh] justify-between text-slate-100">
+      {/* Top Header with Back */}
+      <div className="flex items-center justify-between pb-4 border-b border-indigo-500/20">
+        {onBackToMenu ? (
+          <button
+            type="button"
+            onClick={onBackToMenu}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Назад</span>
+          </button>
+        ) : <div />}
+
+        <div className="text-right">
+          <span className="text-xs font-bold text-yellow-400 uppercase tracking-widest">
+            MEHLIST
+          </span>
+        </div>
+      </div>
+
       {/* Brand Header */}
-      <div className="text-center space-y-1">
+      <div className="text-center space-y-1 my-4">
         <span className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-1.5">
           <span className="text-yellow-400">MEH</span>LIST
         </span>

@@ -1,13 +1,14 @@
 import React from 'react';
 import { GameRoomState } from '../../types/game.ts';
-import { ArrowRight, Trophy, Zap } from 'lucide-react';
+import { ArrowRight, Trophy, Zap, ArrowLeft } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
   onNextBattle: () => void;
+  onBackToLobby?: () => void;
 }
 
-export const HostRevealResults: React.FC<Props> = ({ roomState, onNextBattle }) => {
+export const HostRevealResults: React.FC<Props> = ({ roomState, onNextBattle, onBackToLobby }) => {
   const battle = roomState.battles[roomState.currentBattleIndex];
   if (!battle) return null;
 
@@ -43,6 +44,19 @@ export const HostRevealResults: React.FC<Props> = ({ roomState, onNextBattle }) 
       {/* Top Header */}
       <div className="flex items-center justify-between pb-4 border-b border-indigo-500/20">
         <div className="flex items-center gap-3">
+          {onBackToLobby && (
+            <button
+              onClick={() => {
+                if (window.confirm('Вернуться в лобби?')) {
+                  onBackToLobby();
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold mr-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>В лобби</span>
+            </button>
+          )}
           <span className="text-xs px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-black uppercase tracking-wider">
             Результаты голосования
           </span>

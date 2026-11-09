@@ -12,6 +12,7 @@ import {
   BookOpen,
   Sliders,
   Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 import { sounds } from '../../utils/audio.ts';
 
@@ -22,6 +23,7 @@ interface Props {
   onRemovePlayer: (playerId: string) => void;
   onStartGame: () => void;
   onOpenPromptsModal: () => void;
+  onBackToMenu?: () => void;
 }
 
 export const HostLobby: React.FC<Props> = ({
@@ -31,6 +33,7 @@ export const HostLobby: React.FC<Props> = ({
   onRemovePlayer,
   onStartGame,
   onOpenPromptsModal,
+  onBackToMenu,
 }) => {
   const [copied, setCopied] = useState(false);
   const [isMuted, setIsMuted] = useState(sounds.getMuted());
@@ -80,6 +83,20 @@ export const HostLobby: React.FC<Props> = ({
       {/* Top Bar with brand and quick controls */}
       <div className="flex items-center justify-between pb-6 border-b border-indigo-500/20">
         <div className="flex items-center gap-3">
+          {onBackToMenu && (
+            <button
+              onClick={() => {
+                if (window.confirm('Выйти в главное меню и закрыть эту комнату?')) {
+                  onBackToMenu();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-colors mr-1"
+              title="Выйти в меню"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Назад</span>
+            </button>
+          )}
           <span className="text-3xl font-black tracking-tight text-white flex items-center gap-2">
             <span className="text-yellow-400">MEH</span>LIST
           </span>

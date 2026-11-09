@@ -59,6 +59,15 @@ export default function App() {
   // Current player helper
   const currentPlayer = roomState?.players.find((p) => p.id === playerId);
 
+  const handleBackToMenu = () => {
+    leaveRoom();
+    setAppMode('SELECT');
+  };
+
+  const handleBackToLobby = () => {
+    sendMessage({ type: 'RESTART_GAME' });
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0D1B] text-slate-100 flex flex-col relative overflow-hidden">
       {/* Background glow effects */}
@@ -161,21 +170,30 @@ export default function App() {
               onRemovePlayer={(playerId) => sendMessage({ type: 'REMOVE_PLAYER', payload: { playerId } })}
               onStartGame={() => sendMessage({ type: 'START_GAME' })}
               onOpenPromptsModal={() => setIsPromptsModalOpen(true)}
+              onBackToMenu={handleBackToMenu}
             />
           )}
 
           {roomState.phase === 'PROMPTS' && (
-            <HostAnswering roomState={roomState} />
+            <HostAnswering
+              roomState={roomState}
+              onBackToLobby={handleBackToLobby}
+              onBackToMenu={handleBackToMenu}
+            />
           )}
 
           {roomState.phase === 'VOTING' && (
-            <HostBattleShowdown roomState={roomState} />
+            <HostBattleShowdown
+              roomState={roomState}
+              onBackToLobby={handleBackToLobby}
+            />
           )}
 
           {roomState.phase === 'REVEAL' && (
             <HostRevealResults
               roomState={roomState}
               onNextBattle={() => sendMessage({ type: 'NEXT_BATTLE' })}
+              onBackToLobby={handleBackToLobby}
             />
           )}
 
@@ -183,6 +201,7 @@ export default function App() {
             <HostRoundSummary
               roomState={roomState}
               onNextRound={() => sendMessage({ type: 'NEXT_ROUND' })}
+              onBackToLobby={handleBackToLobby}
             />
           )}
 
@@ -190,6 +209,7 @@ export default function App() {
             <HostFinalPodium
               roomState={roomState}
               onRestartGame={() => sendMessage({ type: 'RESTART_GAME' })}
+              onBackToMenu={handleBackToMenu}
             />
           )}
         </div>
@@ -204,6 +224,7 @@ export default function App() {
                 setAppMode('HOST');
                 createRoom('Ведущий', '👑');
               }}
+              onBackToMenu={handleBackToMenu}
             />
           ) : (
             <>
@@ -212,7 +233,7 @@ export default function App() {
                   roomState={roomState}
                   currentPlayer={currentPlayer}
                   onSendReaction={(emoji) => sendMessage({ type: 'SEND_REACTION', payload: { emoji } })}
-                  onLeaveRoom={leaveRoom}
+                  onLeaveRoom={handleBackToMenu}
                 />
               )}
 
@@ -224,6 +245,7 @@ export default function App() {
                     sendMessage({ type: 'SUBMIT_ANSWER', payload: { promptId, text, thripItems } })
                   }
                   onSendReaction={(emoji) => sendMessage({ type: 'SEND_REACTION', payload: { emoji } })}
+                  onLeaveRoom={handleBackToMenu}
                 />
               )}
 
@@ -235,6 +257,7 @@ export default function App() {
                     sendMessage({ type: 'SUBMIT_VOTE', payload: { battleIndex, votedPlayerId } })
                   }
                   onSendReaction={(emoji) => sendMessage({ type: 'SEND_REACTION', payload: { emoji } })}
+                  onLeaveRoom={handleBackToMenu}
                 />
               )}
 
@@ -245,6 +268,7 @@ export default function App() {
                   roomState={roomState}
                   currentPlayer={currentPlayer}
                   onSendReaction={(emoji) => sendMessage({ type: 'SEND_REACTION', payload: { emoji } })}
+                  onLeaveRoom={handleBackToMenu}
                 />
               )}
             </>

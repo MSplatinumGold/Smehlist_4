@@ -1,20 +1,34 @@
 import React from 'react';
 import { GameRoomState } from '../../types/game.ts';
-import { Trophy, ArrowRight, Award } from 'lucide-react';
+import { Trophy, ArrowRight, Award, ArrowLeft } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
   onNextRound: () => void;
+  onBackToLobby?: () => void;
 }
 
-export const HostRoundSummary: React.FC<Props> = ({ roomState, onNextRound }) => {
+export const HostRoundSummary: React.FC<Props> = ({ roomState, onNextRound, onBackToLobby }) => {
   // Sort players by score descending
   const sortedPlayers = [...roomState.players].sort((a, b) => b.score - a.score);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col min-h-[85vh] justify-between text-slate-100">
       {/* Top Header */}
-      <div className="text-center space-y-2">
+      <div className="relative text-center space-y-2">
+        {onBackToLobby && (
+          <button
+            onClick={() => {
+              if (window.confirm('Вернуться в лобби?')) {
+                onBackToLobby();
+              }
+            }}
+            className="absolute left-0 top-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>В лобби</span>
+          </button>
+        )}
         <span className="text-xs uppercase tracking-widest font-black text-yellow-400">
           Итоги раунда {roomState.currentRound} из {roomState.totalRounds}
         </span>

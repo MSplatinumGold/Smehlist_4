@@ -21,6 +21,17 @@ export const PlayerLobby: React.FC<Props> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between pb-4 border-b border-indigo-500/20">
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (window.confirm('Вы уверены, что хотите выйти из комнаты в главное меню?')) {
+                onLeaveRoom();
+              }
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors mr-1"
+            title="Выйти в меню"
+          >
+            <span>← Выйти</span>
+          </button>
           <span className="text-2xl">{currentPlayer.avatar}</span>
           <div>
             <span className="text-sm font-black text-white block leading-tight">

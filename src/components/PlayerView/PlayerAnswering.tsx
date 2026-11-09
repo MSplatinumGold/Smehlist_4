@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { GameRoomState, Player } from '../../types/game.ts';
 import { ReactionPad } from './ReactionPad.tsx';
-import { Send, CheckCircle2, Clock } from 'lucide-react';
+import { Send, CheckCircle2, Clock, ArrowLeft } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
   currentPlayer: Player;
   onSubmitAnswer: (promptId: string, text: string, thripItems?: [string, string, string]) => void;
   onSendReaction: (emoji: string) => void;
+  onLeaveRoom?: () => void;
 }
 
 export const PlayerAnswering: React.FC<Props> = ({
@@ -15,49 +16,94 @@ export const PlayerAnswering: React.FC<Props> = ({
   currentPlayer,
   onSubmitAnswer,
   onSendReaction,
+  onLeaveRoom,
 }) => {
-  // Find prompt assigned to this player
-  const myBattle = roomState.battles.find(
+  // Find all battles assigned to this player
+  const myBattles = roomState.battles.filter(
     (b) => b.player1Id === currentPlayer.id || b.player2Id === currentPlayer.id
   );
+
+  const isBattleAnswered = (b: (typeof myBattles)[0]) => {
+    return (
+      (b.player1Id === currentPlayer.id && !!b.answer1) ||
+      (b.player2Id === currentPlayer.id && !!b.answer2)
+    );
+  };
+
+  const answeredCount = myBattles.filter(isBattleAnswered).length;
+  const totalAssigned = myBattles.length;
+
+  // Find the first unanswered battle
+  const activeBattle = myBattles.find((b) => !isBattleAnswered(b));
+  const activeIndex = myBattles.findIndex((b) => !isBattleAnswered(b));
 
   const [standardText, setStandardText] = useState('');
   const [thrip1, setThrip1] = useState('');
   const [thrip2, setThrip2] = useState('');
   const [thrip3, setThrip3] = useState('');
 
-  if (!myBattle) {
+  if (totalAssigned === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-8 text-center text-slate-300">
-        В этом раунде вы наблюдатель! Смотрите на экран ТВ и готовьтесь голосовать.
+        <p>В этом раунде вы наблюдатель! Смотрите на экран ТВ и готовьтесь голосовать.</p>
+        {onLeaveRoom && (
+          <button
+            onClick={onLeaveRoom}
+            className="mt-4 px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:text-white"
+          >
+            ← Назад в меню
+          </button>
+        )}
       </div>
     );
   }
 
-  const isThrip = myBattle.prompt.type === 'THRIP';
-  const hasSubmitted =
-    (myBattle.player1Id === currentPlayer.id && !!myBattle.answer1) ||
-    (myBattle.player2Id === currentPlayer.id && !!myBattle.answer2);
+  const isThrip = activeBattle?.prompt.type === 'THRIP';
+  const allSubmitted = answeredCount === totalAssigned;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeBattle) return;
+
     if (isThrip) {
       if (!thrip1.trim() || !thrip2.trim() || !thrip3.trim()) return;
       const combined = `1. ${thrip1.trim()}  2. ${thrip2.trim()}  3. ${thrip3.trim()}`;
-      onSubmitAnswer(myBattle.promptId, combined, [thrip1.trim(), thrip2.trim(), thrip3.trim()]);
+      onSubmitAnswer(activeBattle.promptId, combined, [thrip1.trim(), thrip2.trim(), thrip3.trim()]);
+      setThrip1('');
+      setThrip2('');
+      setThrip3('');
     } else {
       if (!standardText.trim()) return;
-      onSubmitAnswer(myBattle.promptId, standardText.trim());
+      onSubmitAnswer(activeBattle.promptId, standardText.trim());
+      setStandardText('');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-6 flex flex-col min-h-[90vh] justify-between text-slate-100">
-      {/* Top Bar with Timer */}
+    <div className="max-w-md mx-auto px-4 py-5 flex flex-col min-h-[92vh] justify-between text-slate-100">
+      {/* Top Bar with Back Button and Timer */}
       <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20">
         <div className="flex items-center gap-2">
+          {onLeaveRoom && (
+            <button
+              onClick={() => {
+                if (window.confirm('Вы уверены, что хотите выйти из комнаты в главное меню?')) {
+                  onLeaveRoom();
+                }
+              }}
+              className="p-1.5 -ml-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              title="Назад в меню"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <span className="text-xl">{currentPlayer.avatar}</span>
-          <span className="text-xs font-bold text-white">{currentPlayer.name}</span>
+          <div>
+            <span className="text-xs font-bold text-white block leading-tight">{currentPlayer.name}</span>
+            <span className="text-[10px] text-yellow-400 font-mono">
+              Ответов: {answeredCount}/{totalAssigned}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-indigo-500/30">
@@ -68,31 +114,56 @@ export const PlayerAnswering: React.FC<Props> = ({
         </div>
       </div>
 
-      {hasSubmitted ? (
-        /* Submitted State */
+      {allSubmitted ? (
+        /* All Answers Submitted State */
         <div className="my-auto text-center space-y-4 bg-[#14172E] border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <h2 className="text-xl font-black text-white">
-              Ответ принят! 🔥
+              Все ответы приняты! ({answeredCount} из {totalAssigned}) 🔥
             </h2>
             <p className="text-xs text-slate-300">
-              Вы отлично справились. Ждём остальных игроков перед началом баттлов.
+              Вы ответили на все задания раунда. Ждём остальных игроков перед началом баттлов на ТВ!
             </p>
           </div>
         </div>
-      ) : (
-        /* Input Form State */
+      ) : activeBattle ? (
+        /* Input Form for Current Active Prompt */
         <form onSubmit={handleSubmit} className="my-auto space-y-4">
+          {/* Progress Indicator */}
+          {totalAssigned > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              {myBattles.map((b, idx) => {
+                const done = isBattleAnswered(b);
+                const current = idx === activeIndex;
+                return (
+                  <div
+                    key={b.promptId}
+                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border transition-all ${
+                      done
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                        : current
+                        ? 'bg-yellow-400/20 border-yellow-400 text-yellow-300 shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-500'
+                    }`}
+                  >
+                    <span>Задание {idx + 1}</span>
+                    {done && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Question Banner */}
           <div className="bg-[#14172E] border border-indigo-500/30 rounded-3xl p-5 shadow-xl text-center space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-yellow-400 block">
-              {isThrip ? '🔥 Задание «3 вещи» (THRIP)' : 'Ваше задание'}
+              {isThrip ? '🔥 Задание «3 вещи» (THRIP)' : `Задание ${activeIndex + 1} из ${totalAssigned}`}
             </span>
             <h2 className="text-lg sm:text-xl font-black text-white leading-snug">
-              «{myBattle.prompt.text}»
+              «{activeBattle.prompt.text}»
             </h2>
           </div>
 
@@ -167,10 +238,10 @@ export const PlayerAnswering: React.FC<Props> = ({
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-slate-950 font-black text-base uppercase tracking-wider transition-all shadow-lg hover:shadow-[0_0_20px_rgba(250,204,21,0.4)] flex items-center justify-center gap-2"
           >
             <Send className="w-4 h-4 fill-current" />
-            <span>Отправить ответ</span>
+            <span>{activeIndex + 1 < totalAssigned ? 'Отправить и перейти к следующему →' : 'Отправить финальный ответ'}</span>
           </button>
         </form>
-      )}
+      ) : null}
 
       {/* Bottom Reaction Pad */}
       <ReactionPad onSendReaction={onSendReaction} />

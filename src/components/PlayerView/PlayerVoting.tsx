@@ -8,6 +8,7 @@ interface Props {
   currentPlayer: Player;
   onSubmitVote: (battleIndex: number, votedPlayerId: string) => void;
   onSendReaction: (emoji: string) => void;
+  onLeaveRoom?: () => void;
 }
 
 export const PlayerVoting: React.FC<Props> = ({
@@ -15,6 +16,7 @@ export const PlayerVoting: React.FC<Props> = ({
   currentPlayer,
   onSubmitVote,
   onSendReaction,
+  onLeaveRoom,
 }) => {
   const battle = roomState.battles[roomState.currentBattleIndex];
   if (!battle) return null;
@@ -32,6 +34,18 @@ export const PlayerVoting: React.FC<Props> = ({
       {/* Top Header */}
       <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20">
         <div className="flex items-center gap-2">
+          {onLeaveRoom && (
+            <button
+              onClick={() => {
+                if (window.confirm('Выйти из игры в главное меню?')) {
+                  onLeaveRoom();
+                }
+              }}
+              className="text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-slate-800 text-xs font-semibold mr-1"
+            >
+              ← Выйти
+            </button>
+          )}
           <span className="text-xl">{currentPlayer.avatar}</span>
           <span className="text-xs font-bold text-white">{currentPlayer.name}</span>
         </div>

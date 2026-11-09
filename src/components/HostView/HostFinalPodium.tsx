@@ -1,13 +1,14 @@
 import React from 'react';
 import { GameRoomState } from '../../types/game.ts';
-import { Trophy, RotateCcw, Crown, Sparkles } from 'lucide-react';
+import { Trophy, RotateCcw, Crown, Sparkles, ArrowLeft } from 'lucide-react';
 
 interface Props {
   roomState: GameRoomState;
   onRestartGame: () => void;
+  onBackToMenu?: () => void;
 }
 
-export const HostFinalPodium: React.FC<Props> = ({ roomState, onRestartGame }) => {
+export const HostFinalPodium: React.FC<Props> = ({ roomState, onRestartGame, onBackToMenu }) => {
   const sortedPlayers = [...roomState.players].sort((a, b) => b.score - a.score);
 
   const champion = sortedPlayers[0];
@@ -89,6 +90,16 @@ export const HostFinalPodium: React.FC<Props> = ({ roomState, onRestartGame }) =
 
       {/* Action Restart Button */}
       <div className="pt-6 border-t border-indigo-500/20 flex flex-col sm:flex-row items-center justify-center gap-4">
+        {onBackToMenu && (
+          <button
+            onClick={onBackToMenu}
+            className="px-6 py-4 rounded-2xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-sm tracking-wide transition-all border border-slate-700 flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>В главное меню</span>
+          </button>
+        )}
+
         <button
           onClick={onRestartGame}
           className="px-10 py-4 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-slate-950 font-black text-base tracking-wide uppercase transition-all shadow-xl hover:shadow-[0_0_25px_rgba(250,204,21,0.4)] flex items-center justify-center gap-2.5"

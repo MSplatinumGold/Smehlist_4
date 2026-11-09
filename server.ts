@@ -32,9 +32,25 @@ const wss = new WebSocketServer({ server });
 interface ExtendedRoom extends GameRoomState {
   clients: Map<string, WebSocket>; // playerId -> socket
   timerInterval?: NodeJS.Timeout;
+  lastActive: number;
 }
 
 const rooms = new Map<string, ExtendedRoom>();
+
+// Memory cleanup for low RAM (512 MB) environments: purge inactive/empty rooms
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms.entries()) {
+    const hasOpenSockets = Array.from(room.clients.values()).some(
+      (ws) => ws.readyState === WebSocket.OPEN
+    );
+    if (!hasOpenSockets && now - (room.lastActive || 0) > 15 * 60 * 1000) {
+      if (room.timerInterval) clearInterval(room.timerInterval);
+      rooms.delete(code);
+      console.log(`[RAM Cleanup] Closed empty room ${code}`);
+    }
+  }
+}, 5 * 60 * 1000);
 
 // Memory bank for custom prompts
 let customPrompts: PromptItem[] = [...DEFAULT_PROMPTS];
@@ -133,18 +149,27 @@ function prepareBattlesForRound(room: ExtendedRoom) {
 
   // Each player gets paired for a showdown
   if (players.length === 2) {
-    // 2 players: 1 battle
-    const prompt = shuffled[0] || customPrompts[0];
+    // 2 players: 2 distinct battles so both players answer 2 different prompts simultaneously!
+    const prompt1 = shuffled[0] || customPrompts[0];
+    const prompt2 = shuffled[1] || customPrompts[1] || prompt1;
     battles.push({
-      promptId: `${prompt.id}-r${room.currentRound}-0`,
-      prompt,
+      promptId: `${prompt1.id}-r${room.currentRound}-0`,
+      prompt: prompt1,
       player1Id: players[0].id,
       player2Id: players[1].id,
       votes: {},
       resolved: false,
     });
+    battles.push({
+      promptId: `${prompt2.id}-r${room.currentRound}-1`,
+      prompt: prompt2,
+      player1Id: players[1].id,
+      player2Id: players[0].id,
+      votes: {},
+      resolved: false,
+    });
   } else {
-    // 3+ players: circular pairing so every player gets in at least 1 or 2 battles
+    // 3+ players: circular pairing so every player answers 2 distinct prompts
     const numBattles = Math.min(players.length, shuffled.length);
     for (let i = 0; i < numBattles; i++) {
       const p1 = players[i];
@@ -429,6 +454,7 @@ wss.on('connection', (ws: WebSocket) => {
             currentBattleIndex: 0,
             reactions: [],
             clients: new Map([[hostPlayer.id, ws]]),
+            lastActive: Date.now(),
           };
 
           rooms.set(code, newRoom);
